@@ -1,0 +1,1 @@
+Se nesecitan diversor documentos para la Conexion con oracle sea exitosa con el laravel, es necesario tener el oci8 y el instantClientOracle dependiendo que version de PHP y LARAVEL tengan, se configura el php.ini si estan utilizando XAMPP y en las variables de entorno se pone el InstanClient de oracle. 
