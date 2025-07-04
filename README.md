@@ -4,7 +4,7 @@ Este proyecto es una aplicación web construida en **Laravel** que permite:
 
 - Registro y autenticación de usuarios.
 - Gestión de roles: Bibliotecario y Usuario.
-- CRUD de libros (crear, listar).
+- CRUD de libros (crear, listar, editar y eliminar).
 - Procedimientos almacenados en Oracle.
 
 ---
