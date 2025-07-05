@@ -1,53 +1,32 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\Libro;
 
 class LibroController extends Controller
 {
-    /**
-     * Listar libros
-     */
-    public function listar() {
-        $usuarioActual = session('usuario_actual');
-
-        if (!$usuarioActual) {
-            return redirect()->route('iniciar-sesion')->with('error', 'Debes iniciar sesión para acceder');
-        }
-
-        if ($usuarioActual->rol === 'bibliotecario') {
-            $libros = DB::select("SELECT * FROM libros");
-            return view('libros.listar', compact('libros'));
-        } else {
-            $librosDisponibles = DB::select("SELECT * FROM libros WHERE stock > 0");
-            return view('libros.catalogo-usuario', compact('librosDisponibles'));
-        }
+    public function catalogoUsuario()
+    {
+        $libros = Libro::all();
+        return view('Libros.catalogo-usuario', compact('libros'));
     }
 
-    /**
-     * Mostrar formulario de creación de libro
-     */
-    public function crear() {
-        $usuarioActual = session('usuario_actual');
+    public function listar()
+    {
+        $libros = DB::select("SELECT * FROM libros");
+        return view('libros.listar', compact('libros'));
+    }
 
-        if (!$usuarioActual || $usuarioActual->rol !== 'bibliotecario') {
-            return redirect()->route('inicio')->with('error', 'No tienes permisos suficientes');
-        }
-
+    public function crear()
+    {
         return view('libros.crear');
     }
 
-    /**
-     * Guardar un nuevo libro en la base de datos
-     */
-    public function almacenar(Request $request) {
-        $usuarioActual = session('usuario_actual');
-
-        if (!$usuarioActual || $usuarioActual->rol !== 'bibliotecario') {
-            return redirect()->route('inicio')->with('error', 'No tienes permisos suficientes');
-        }
-
+    public function almacenar(Request $request)
+    {
         $request->validate([
             'titulo' => 'required|string|max:255',
             'autor' => 'required|string|max:255',
@@ -55,18 +34,45 @@ class LibroController extends Controller
             'stock' => 'required|integer|min:0'
         ]);
 
-        try {
-            // Llamada a procedimiento almacenado en Oracle
-            DB::statement("BEGIN crear_libro(:titulo, :autor, :categoria, :stock); END;", [
-                'titulo' => $request->titulo,
-                'autor' => $request->autor,
-                'categoria' => $request->categoria,
-                'stock' => $request->stock
-            ]);
+        DB::statement("BEGIN crear_libro(:titulo, :autor, :categoria, :stock); END;", [
+            'titulo' => $request->titulo,
+            'autor' => $request->autor,
+            'categoria' => $request->categoria,
+            'stock' => $request->stock,
+        ]);
 
-            return redirect()->route('libros.listar')->with('exito', 'Libro registrado correctamente');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Error al registrar el libro: ' . $e->getMessage());
-        }
+        return redirect()->route('libros.listar')->with('exito', 'Libro registrado correctamente');
+    }
+
+    public function editar($id)
+    {
+        $libro = DB::selectOne("SELECT * FROM libros WHERE id = :id", ['id' => $id]);
+        return view('libros.editar', compact('libro'));
+    }
+
+    public function actualizar(Request $request, $id)
+    {
+        $request->validate([
+            'titulo' => 'required',
+            'autor' => 'required',
+            'categoria' => 'required',
+            'stock' => 'required|integer',
+        ]);
+
+        DB::statement("BEGIN actualizar_libro(:id, :titulo, :autor, :categoria, :stock); END;", [
+            'id' => $id,
+            'titulo' => $request->titulo,
+            'autor' => $request->autor,
+            'categoria' => $request->categoria,
+            'stock' => $request->stock,
+        ]);
+
+        return redirect()->route('libros.listar')->with('exito', 'Libro actualizado correctamente');
+    }
+
+    public function eliminar($id)
+    {
+        DB::statement("BEGIN eliminar_libro(:id); END;", ['id' => $id]);
+        return redirect()->route('libros.listar')->with('exito', 'Libro eliminado correctamente');
     }
 }
